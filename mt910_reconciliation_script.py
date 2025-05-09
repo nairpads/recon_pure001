@@ -4,12 +4,12 @@ import pandas as pd
 from datetime import datetime
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+import streamlit as st
+import io
 
 # -------- MT910 Parser --------
-def parse_mt910_messages(file_path):
-    with open(file_path, 'r') as f:
-        content = f.read()
-
+def parse_mt910_messages(uploaded_file):
+    content = uploaded_file.read().decode('utf-8')
     messages = re.split(r'(?=^:20:)', content, flags=re.MULTILINE)
     data = []
 
@@ -42,8 +42,8 @@ def parse_mt910_messages(file_path):
     return pd.DataFrame(data)
 
 # -------- Application Entry Reader --------
-def load_application_entries(file_path):
-    df = pd.read_csv(file_path)
+def load_application_entries(file):
+    df = pd.read_csv(file)
     df['narration'] = df['narration'].astype(str).str.lower()
     df['date'] = pd.to_datetime(df['date'], errors='coerce').dt.date
     df['amount'] = pd.to_numeric(df['amount'], errors='coerce')
@@ -102,10 +102,24 @@ def reconcile(mt_df, app_df):
     mt_df['matched_narration'] = matched_narration
     return mt_df
 
-# -------- Run Reconciliation --------
-def run_reconciliation(mt_file, app_file):
+# -------- Streamlit UI --------
+st.title("MT910 Reconciliation Tool")
+mt_file = st.file_uploader("Upload MT910 File (.txt)", type=["txt"])
+app_file = st.file_uploader("Upload Application CSV File", type=["csv"])
+
+if mt_file and app_file:
     mt_df = parse_mt910_messages(mt_file)
     app_df = load_application_entries(app_file)
     result_df = reconcile(mt_df, app_df)
-    result_df.to_csv('mt910_reconciliation_result.csv', index=False)
-    print("✅ Reconciliation complete. Output saved to mt910_reconciliation_result.csv")
+
+    st.success("✅ Reconciliation complete!")
+    st.dataframe(result_df)
+
+    # Download button
+    csv = result_df.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="📥 Download Results as CSV",
+        data=csv,
+        file_name="mt910_reconciliation_result.csv",
+        mime='text/csv',
+    )
