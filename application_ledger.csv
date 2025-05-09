@@ -1,0 +1,4 @@
+date,amount,narration,ref_no
+06/05/2025,12345.67,Credit to ABC Ltd,TRX987654
+07/05/2025,2345.5,Payment from XYZ Ltd - invoice 45678,TRX123456
+08/05/2025,6789.1,Bank charges reversal,TRX567890
